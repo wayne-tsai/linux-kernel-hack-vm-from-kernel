@@ -32,10 +32,10 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
-      uaddr = task->mm->start_stack - 0xF0; 
+      uaddr = task->mm->start_stack - 0xF0;
       // calculate by the value from printf("%p", &a) in test.c
 
-      mm = get_task_mm(task); // do not try to replace this mm with task->mm
+      mm = get_task_mm(task);  // do not try to replace this mm with task->mm
       down_read(&mm->mmap_sem);
       res = get_user_pages(task, mm, uaddr,
                            1,  // only want 1 page
@@ -45,8 +45,8 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
       if (res == 1) {
         kernel_page_address = kmap(page);
         my_offset = uaddr & (PAGE_SIZE - 1);
-        copy_to_user_page(vma, page, uaddr, kernel_page_address + my_offset, &new_number,
-                          sizeof(int));
+        copy_to_user_page(vma, page, uaddr, kernel_page_address + my_offset,
+                          &new_number, sizeof(int));
         // not work 1: memset(kernel_page_address, 7, sizeof(int));
         // not work 2: *((int *)kernel_page_address) = 777;
         set_page_dirty_lock(page);
@@ -54,9 +54,11 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         page_cache_release(page);
         mmput(mm);
       }
-      len = sprintf(buf,
-                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nKADDR:%p\nRES:%d\nOFFSET:%d\n",
-                    task->pid, task->mm->map_count, (void *)uaddr, kernel_page_address,res, my_offset);
+      len = sprintf(
+          buf,
+          "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nKADDR:%p\nRES:%d\nOFFSET:%d\n",
+          task->pid, task->mm->map_count, (void *)uaddr, kernel_page_address,
+          res, my_offset);
     }
   }
   up_read(&mm->mmap_sem);

@@ -31,12 +31,11 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
-      uaddr = task->mm->start_stack - 0xF0; 
-      // calculate by the value from printf("%p", &a) in test.c
+      uaddr = task->mm->start_stack - 0xF0;  // F0
 
-      mm = get_task_mm(task); // do not try to replace this mm with task->mm
-      down_read(&mm->mmap_sem);
-      res = get_user_pages(task, mm, uaddr,
+      //mm = get_task_mm(task);
+      down_read(&task->mm->mmap_sem);
+      res = get_user_pages(task, task->mm, uaddr,
                            1,  // only want 1 page
                            1,  // do want to write into it
                            1,  // do force
@@ -52,14 +51,14 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         set_page_dirty_lock(page);
         kunmap(page);
         page_cache_release(page);
-        mmput(mm);
+        mmput(task->mm);
       }
       len = sprintf(buf,
                     "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\n",
                     task->pid, task->mm->map_count, (void *)uaddr, res);
     }
   }
-  up_read(&mm->mmap_sem);
+  up_read(&task->mm->mmap_sem);
   return len;
 }
 

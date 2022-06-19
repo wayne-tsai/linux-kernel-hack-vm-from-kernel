@@ -141,6 +141,7 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         kunmap(page);
         // if (!PageReserved(page)) SetPageDirty(page);
         page_cache_release(page);
+	mmput(mm);
       }
       len = sprintf(buf,
                     "\nPID:%d\nMAP "

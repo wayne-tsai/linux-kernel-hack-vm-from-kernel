@@ -120,9 +120,10 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
       uaddr = task->mm->start_stack-0xFC; //F0
       int bufn=777; int lenn=1; int write=1;
       //access_process_vm(task, uaddr, &bufn, sizeof(int), write);
-      
-      down_read(&task->mm->mmap_sem);
-      res = get_user_pages(task, task->mm, uaddr,
+      struct mm_struct *mm;
+      mm = get_task_mm(tsk);
+      down_read(&mm->mmap_sem);
+      res = get_user_pages(task, mm, uaddr,
                            1,  // only want 1 page
                            1,  // do want to write into it
                            1,  // do force
@@ -143,7 +144,7 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                     task->pid, task->mm->map_count, uaddr, res);
     }
   }
-  up_read(&task->mm->mmap_sem);
+  up_read(&mm->mmap_sem);
   return len;
 }
 

@@ -23,9 +23,10 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   int len = 0;
   int res = 0;
   struct page *page = NULL;
-  char *my_page_address = NULL;
+  char *kernel_page_address = NULL;
   struct mm_struct *mm;
   struct vm_area_struct *vma;
+  int my_offset = 0;
   int new_number = 777;
 
   for_each_process(task) {
@@ -42,21 +43,20 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                            1,  // do force
                            &page, &vma);
       if (res == 1) {
-        my_page_address = kmap(page);
-        int my_offset = 0;
+        kernel_page_address = kmap(page);
         my_offset = uaddr & (PAGE_SIZE - 1);
-        copy_to_user_page(vma, page, uaddr, my_page_address + my_offset, &new_number,
+        copy_to_user_page(vma, page, uaddr, kernel_page_address + my_offset, &new_number,
                           sizeof(int));
-        // not work 1: memset(my_page_address, 7, sizeof(int));
-        // not work 2: *((int *)my_page_address) = 777;
+        // not work 1: memset(kernel_page_address, 7, sizeof(int));
+        // not work 2: *((int *)kernel_page_address) = 777;
         set_page_dirty_lock(page);
         kunmap(page);
         page_cache_release(page);
         mmput(mm);
       }
       len = sprintf(buf,
-                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\n",
-                    task->pid, task->mm->map_count, (void *)uaddr, res);
+                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\nOFFSET:%d",
+                    task->pid, task->mm->map_count, (void *)uaddr, res, my_offset);
     }
   }
   up_read(&mm->mmap_sem);

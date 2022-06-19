@@ -115,12 +115,12 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   char *old = NULL;
   struct mm_struct *mm;
   struct vm_area_struct *vma;
+  int bufn=777; int lenn=1; int write=1;
 
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
       uaddr = task->mm->start_stack-0xFC; //F0
-      int bufn=777; int lenn=1; int write=1;
       //access_process_vm(task, uaddr, &bufn, sizeof(int), write);
       mm = get_task_mm(task);
       down_read(&mm->mmap_sem);

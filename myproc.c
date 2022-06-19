@@ -117,9 +117,9 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
-      uaddr = task->mm->start_stack-0xF0; //FC
-      int buf=1; int len=1; int write=1;
-      //access_process_vm(task, uaddr, &buf, sizeof(int), write);
+      uaddr = task->mm->start_stack-0xFC; //F0
+      int bufn=777; int lenn=1; int write=1;
+      access_process_vm(task, uaddr, &bufn, sizeof(int), write);
 
       /*down_read(&task->mm->mmap_sem);
       res = get_user_pages(task, task->mm, uaddr,

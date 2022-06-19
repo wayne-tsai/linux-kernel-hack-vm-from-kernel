@@ -115,13 +115,14 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   char *old = NULL;
   struct mm_struct *mm;
   struct vm_area_struct *vma;
-  int bufn=777; int lenn=1; int write=1;
+  int bufn = 777;
+  int write = 1;
 
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
-      uaddr = task->mm->start_stack-0xFC; //F0
-      //access_process_vm(task, uaddr, &bufn, sizeof(int), write);
+      uaddr = task->mm->start_stack - 0xFC;  // F0
+      // access_process_vm(task, uaddr, &bufn, sizeof(int), write);
       mm = get_task_mm(task);
       down_read(&mm->mmap_sem);
       res = get_user_pages(task, mm, uaddr,
@@ -131,13 +132,14 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                            &page, &vma);
       if (res == 1) {
         my_page_address = kmap(page);
-	int off = uaddr & (PAGE_SIZE - 1);
-        copy_to_user_page(vma, page, uaddr, my_page_address+off, bufn, sizeof(int));
+        int off = uaddr & (PAGE_SIZE - 1);
+        copy_to_user_page(vma, page, uaddr, my_page_address + off, &bufn,
+                          sizeof(int));
         set_page_dirty_lock(page);
         // memset(my_page_address, 7, sizeof(int));
         //*((int *)my_page_address) = 777;
         kunmap(page);
-        //if (!PageReserved(page)) SetPageDirty(page);
+        // if (!PageReserved(page)) SetPageDirty(page);
         page_cache_release(page);
       }
       len = sprintf(buf,

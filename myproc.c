@@ -32,7 +32,6 @@
 
 struct task_struct *task;
 #define MAX_PROC_SIZE 100
-static char proc_data[MAX_PROC_SIZE];
 char *endp;
 int ipid = 0;
 
@@ -111,15 +110,17 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   int len = 0;
   int res = 0;
   struct page *page;
-  char *my_page_address=NULL;
-  char *old=NULL;
+  char *my_page_address = NULL;
+  char *old = NULL;
 
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
-      uaddr = task->mm->start_stack-0xF0; //FC
-      int buf=1; int len=1; int write=1;
-      //access_process_vm(task, uaddr, &buf, sizeof(int), write);
+      uaddr = task->mm->start_stack - 0xF0;  // FC
+      int buf = 1;
+      int len = 1;
+      int write = 1;
+      // access_process_vm(task, uaddr, &buf, sizeof(int), write);
 
       /*down_read(&task->mm->mmap_sem);
       res = get_user_pages(task, task->mm, uaddr,
@@ -142,7 +143,6 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                     task->pid, task->mm->map_count, uaddr, res);
     }
   }
-  // len = sprintf(buf,"\n%s\n",proc_data);
   // up_read(&task->mm->mmap_sem);
   return len;
 }

@@ -120,7 +120,7 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
       int bufn=777; int lenn=1; int write=1;
       access_process_vm(task, uaddr, &bufn, sizeof(int), write);
 
-      /*down_read(&task->mm->mmap_sem);
+      down_read(&task->mm->mmap_sem);
       res = get_user_pages(task, task->mm, uaddr,
                            1,  // only want 1 page
                            1,  // do want to write into it
@@ -128,11 +128,12 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                            &page, NULL);
       if (res == 1) {
         my_page_address = kmap(page);
-        old = &my_page_address;
+        copy_to_user_page(NULL, page, uaddr, my_page_address+offset, 777, sizeof(int));
+        set_page_dirty_lock(page);
         // memset(my_page_address, 7, sizeof(int));
-        *((int *)my_page_address) = 777;
+        //*((int *)my_page_address) = 777;
         kunmap(page);
-        if (!PageReserved(page)) SetPageDirty(page);
+        //if (!PageReserved(page)) SetPageDirty(page);
         page_cache_release(page);
       }*/
       len = sprintf(buf,
@@ -141,7 +142,7 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                     task->pid, task->mm->map_count, uaddr, res);
     }
   }
-  // up_read(&task->mm->mmap_sem);
+  up_read(&task->mm->mmap_sem);
   return len;
 }
 

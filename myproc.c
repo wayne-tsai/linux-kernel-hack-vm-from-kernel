@@ -47,8 +47,8 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         my_offset = uaddr & (PAGE_SIZE - 1);
         copy_to_user_page(vma, page, uaddr, my_page_address + my_offset, &new_number,
                           sizeof(int));
-        // memset(my_page_address, 7, sizeof(int));
-        //*((int *)my_page_address) = 777;
+        // not work 1: memset(my_page_address, 7, sizeof(int));
+        // not work 2: *((int *)my_page_address) = 777;
         set_page_dirty_lock(page);
         kunmap(page);
         page_cache_release(page);

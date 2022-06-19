@@ -121,22 +121,46 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr,
 int read_proc(char *buf,char **start,off_t offset,int count,int *eof,void *data )
 {
     int len=0;
+    int res=0;
+    struct page *page;
+    char* my_page_address;
+    char* old;
+
     for_each_process( task ){
         if(task->pid == ipid){
-            int* a; 
-            a = task->mm->start_stack-0xF0; 
-	    int* r;
-	    access_process_vm(task, a, r, 1, 0);
-            //r = get_user( r , a );
-            len = sprintf(buf,"\n%d %d OK\n%p\n%p\n%p\n%p\n%d\n",task->pid,task->mm->map_count,task->mm->start_code,task->mm->start_data,task->mm->start_brk,a,r);
-            int x = 8;
-	    put_user( x, a );
-            //ptrace(PTRACE_ATTACH, ipid, NULL, NULL);
-            //ptrace(PTRACE_POKEDATA, ipid, a, x);
+            //int* a; 
+            //a = task->mm->start_stack-0xF0; 
+	    //int* r;
+	    //access_process_vm(task, a, r, 1, 0);
+	    unsigned long uaddr;
+	    uaddr = task->mm->start_stack-0xFC;
+	    down_read(&task->mm->mmap_sem);
+	    res = get_user_pages(task,task->mm,
+				 uaddr,
+				 1, // only want 1 page
+				 1, // do want to write into it
+			         1, // do force
+				 &page,
+				 NULL);
+	    if(res == 1){
+		my_page_address = kmap(page);
+	        old = &my_page_address;
+                //memset(my_page_address, 7, sizeof(int));
+                *((int*)my_page_address) = 777;
+		kunmap(page);
+		if (!PageReserved(page))
+		SetPageDirty(page);
+		page_cache_release(page);
+            }
+            len = sprintf(buf,"\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\nOld:%d\nNEW:%d\nPAddr:%p\n",
+	                  task->pid,task->mm->map_count,
+	                  uaddr ,res,
+			  *((int*)old),
+			  *((int*)my_page_address),my_page_address);
       }
    }
 //   len = sprintf(buf,"\n%s\n",proc_data);
-
+    //up_read(&task->mm->mmap_sem);
     return len;
 }
 

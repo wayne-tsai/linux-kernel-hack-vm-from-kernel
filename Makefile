@@ -19,6 +19,6 @@ clean:
 
 else
     # called from kernel build system: just declare what our modules are
-    obj-m := myproc.o memory.o
+    obj-m := myproc.o
 
 endif

@@ -110,9 +110,11 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
               void *data) {
   int len = 0;
   int res = 0;
-  struct page *page;
+  struct page *page = NULL;
   char *my_page_address = NULL;
   char *old = NULL;
+  struct mm_struct *mm;
+  struct vm_area_struct *vma;
 
   for_each_process(task) {
     if (task->pid == ipid) {
@@ -120,17 +122,17 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
       uaddr = task->mm->start_stack-0xFC; //F0
       int bufn=777; int lenn=1; int write=1;
       //access_process_vm(task, uaddr, &bufn, sizeof(int), write);
-      struct mm_struct *mm;
-      mm = get_task_mm(tsk);
+      mm = get_task_mm(task);
       down_read(&mm->mmap_sem);
       res = get_user_pages(task, mm, uaddr,
                            1,  // only want 1 page
                            1,  // do want to write into it
                            1,  // do force
-                           &page, NULL);
+                           &page, &vma);
       if (res == 1) {
         my_page_address = kmap(page);
-        copy_to_user_page(NULL, page, uaddr, my_page_address+offset, 777, sizeof(int));
+	int off = uaddr & (PAGE_SIZE - 1);
+        copy_to_user_page(vma, page, uaddr, my_page_address+off, bufn, sizeof(int));
         set_page_dirty_lock(page);
         // memset(my_page_address, 7, sizeof(int));
         //*((int *)my_page_address) = 777;

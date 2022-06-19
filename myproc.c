@@ -1,16 +1,14 @@
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
 #include <asm/uaccess.h>
 #include <linux/cdev.h>
+#include <linux/highmem.h> /* for kmap() */
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/mm.h> /* for copy_to_user_page() */
+#include <linux/module.h>
+#include <linux/pagemap.h> /* for page_cache_release() */
 #include <linux/proc_fs.h>
-
 #include <linux/sched.h>
 #include <linux/utsname.h>
-
-#include <linux/mm.h> /* for copy_to_user_page() */
-#include <linux/highmem.h> /* for kmap() */
-#include <linux/pagemap.h> /* for page_cache_release() */
 
 struct task_struct *task;
 #define MAX_PROC_SIZE 100
@@ -26,17 +24,15 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   int res = 0;
   struct page *page = NULL;
   char *my_page_address = NULL;
-  char *old = NULL;
   struct mm_struct *mm;
   struct vm_area_struct *vma;
-  int bufn = 777;
-  int write = 1;
+  int new_number = 777;
 
   for_each_process(task) {
     if (task->pid == ipid) {
       unsigned long uaddr;
       uaddr = task->mm->start_stack - 0xFC;  // F0
-      // access_process_vm(task, uaddr, &bufn, sizeof(int), write);
+
       mm = get_task_mm(task);
       down_read(&mm->mmap_sem);
       res = get_user_pages(task, mm, uaddr,
@@ -46,21 +42,20 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
                            &page, &vma);
       if (res == 1) {
         my_page_address = kmap(page);
-        int off = uaddr & (PAGE_SIZE - 1);
-        copy_to_user_page(vma, page, uaddr, my_page_address + off, &bufn,
+        int my_offset = 0;
+        my_offset = uaddr & (PAGE_SIZE - 1);
+        copy_to_user_page(vma, page, uaddr, my_page_address + my_offset, &new_number,
                           sizeof(int));
-        set_page_dirty_lock(page);
         // memset(my_page_address, 7, sizeof(int));
         //*((int *)my_page_address) = 777;
+        set_page_dirty_lock(page);
         kunmap(page);
-        // if (!PageReserved(page)) SetPageDirty(page);
         page_cache_release(page);
-	mmput(mm);
+        mmput(mm);
       }
       len = sprintf(buf,
-                    "\nPID:%d\nMAP "
-                    "COUNT:%d\nUADDR:%p\nRES:%d\n",
-                    task->pid, task->mm->map_count, uaddr, res);
+                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\n",
+                    task->pid, task->mm->map_count, (void *)uaddr, res);
     }
   }
   up_read(&mm->mmap_sem);

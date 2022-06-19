@@ -111,18 +111,17 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
   int len = 0;
   int res = 0;
   struct page *page;
-  char *my_page_address;
-  char *old;
+  char *my_page_address=NULL;
+  char *old=NULL;
 
   for_each_process(task) {
     if (task->pid == ipid) {
-      // int* addr;
-      // addr = task->mm->start_stack-0xF0;
-      // int* buf; int len=1; int write=0;
-      // access_process_vm(task, addr, buf, len, write);
       unsigned long uaddr;
-      uaddr = task->mm->start_stack - 0xFC;
-      down_read(&task->mm->mmap_sem);
+      uaddr = task->mm->start_stack-0xF0; //FC
+      int buf=1; int len=1; int write=1;
+      //access_process_vm(task, uaddr, &buf, sizeof(int), write);
+
+      /*down_read(&task->mm->mmap_sem);
       res = get_user_pages(task, task->mm, uaddr,
                            1,  // only want 1 page
                            1,  // do want to write into it
@@ -136,15 +135,14 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         kunmap(page);
         if (!PageReserved(page)) SetPageDirty(page);
         page_cache_release(page);
-      }
+      }*/
       len = sprintf(buf,
                     "\nPID:%d\nMAP "
-                    "COUNT:%d\nUADDR:%p\nRES:%d\nOld:%d\nNEW:%d\nPAddr:%p\n",
-                    task->pid, task->mm->map_count, uaddr, res, *((int *)old),
-                    *((int *)my_page_address), my_page_address);
+                    "COUNT:%d\nUADDR:%p\nRES:%d\n",
+                    task->pid, task->mm->map_count, uaddr, res);
     }
   }
-  //   len = sprintf(buf,"\n%s\n",proc_data);
+  // len = sprintf(buf,"\n%s\n",proc_data);
   // up_read(&task->mm->mmap_sem);
   return len;
 }

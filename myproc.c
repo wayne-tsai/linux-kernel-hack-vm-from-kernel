@@ -55,8 +55,8 @@ int read_proc(char *buf, char **start, off_t offset, int count, int *eof,
         mmput(mm);
       }
       len = sprintf(buf,
-                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nRES:%d\nOFFSET:%d",
-                    task->pid, task->mm->map_count, (void *)uaddr, res, my_offset);
+                    "\nPID:%d\nMAP COUNT:%d\nUADDR:%p\nKADDR:%p\nRES:%d\nOFFSET:%d\n",
+                    task->pid, task->mm->map_count, (void *)uaddr, kernel_page_address,res, my_offset);
     }
   }
   up_read(&mm->mmap_sem);
